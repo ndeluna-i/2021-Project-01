@@ -30,10 +30,35 @@ confirmed_country
 ##  Still missing syntax to include deaths and recovered and
 ##  Use if statements to see if they all match.
 
+# NDL -- Creates variable with province/state and country/region based on max confirmed on 01/22/20
+confirmed_origin <- confirmed[which.max(confirmed$X1.22.20), c("Province.State", "Country.Region")]
+confirmed_country <- as.character(confirmed_origin[[c("Country.Region")]])
+confirmed_state <- as.character(confirmed_origin[[c("Province.State")]])
+
 # NDL -- Creates variable with province/state and country/region based on max deaths on 01/22/20
 deaths_origin <- deaths[which.max(deaths$X1.22.20), c("Province.State", "Country.Region")]
+deaths_country <- as.character(deaths_origin[[c("Country.Region")]])
+deaths_state <- as.character(deaths_origin[[c("Province.State")]])
 
 # NDL -- Creates variable with province/state and country/region based on max recovered on 01/22/20
 recovered_origin <- recovered[which.max(recovered$X1.22.20), c("Province.State", "Country.Region")]
+recovered_country <- as.character(recovered_origin[[c("Country.Region")]])
+recovered_state <- as.character(recovered_origin[[c("Province.State")]])
 
-# NDL -- These two might change as i think of how to compare the three object comparison
+# NDL -- Conditional statement to see if country is same between 3 variables
+if(identical(deaths_country, recovered_country) == identical(recovered_country, confirmed_country))
+  {
+  print("same country")
+  }else
+    {
+      print("not same country")
+    }
+
+# NDL -- Conditional statement to see if sate is same between 3 variables
+if(identical(deaths_state, recovered_state) == identical(recovered_state, confirmed_state))
+{
+  print("same state")
+}else
+{
+  print("not same state")
+}
