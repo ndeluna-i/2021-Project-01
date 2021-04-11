@@ -51,3 +51,39 @@ recent_case
 ## Most recent case was on January 21st, 2021, in Micronesia
 
 
+
+# NDL -- Going to give this a try without a loop
+
+library(dplyr)
+confirmed <- read.csv("time_series_covid19_confirmed_global.csv", stringsAsFactors = FALSE)
+        
+# NDL -- arranged all days in ascending order, last location with a first confirmed case should be
+# cont. -- the first one on the confirmed_ordered data frame.
+
+ncol <- ncol(confirmed)
+confirmed_ordered <- arrange(confirmed, confirmed[5:ncol])
+head(confirmed_ordered$Country.Region, n = 1)
+
+# NDL -- Micronesia has most recent confirmed case
+
+# NDL -- Following will find day whith first confirmed case for Micronesia
+
+# NDL -- subsetting to have "recent" data frame only contain data under each date column
+recent <- confirmed_ordered[1,-c(1:4)]
+ncol_recent <- ncol(recent)
+
+# NDL -- removes all non zero columns
+recent <- recent[,recent[,1:ncol_recent]!=0]
+# NDL -- first column will be the day of first confirmed case
+colnames(recent[1])
+
+head(confirmed_ordered$X1.20.21)
+head(confirmed_ordered$X1.21.21)
+# NDL the above line shows us only Micronesia had a first confirmed case on X1.21.21
+
+# NDL -- its a little  wild, but i'm surprised this is getting me the same asnwer you got, so it must work?
+
+        
+
+
+
