@@ -1,0 +1,177 @@
+---
+title: "Project 1"
+author: "Naycari de Luna and Marc Robert Grabiel"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 3
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{array}
+  - \usepackage{multirow}
+  - \usepackage{wrapfig}
+  - \usepackage{float}
+  - \usepackage{colortbl}
+  - \usepackage{pdflscape}
+  - \usepackage{tabu}
+  - \usepackage{threeparttable}
+  - \usepackage{threeparttablex}
+  - \usepackage[normalem]{ulem}
+  - \usepackage{makecell}
+  - \usepackage{xcolor}
+---
+```{r setup, include = FALSE}
+
+#### Load necessary packages ####
+# * These packages are not necessary to complete the assignment and or only used 
+#   to provide an example. 
+packages <- c("knitr", "magrittr", "geosphere")
+
+install_me <- packages[!(packages %in% installed.packages()[, "Package"])]
+if (length(install_me)) install.packages(install_me)
+
+library(knitr)
+library(magrittr)
+library(geosphere)
+```
+
+## Background
+The World Health Organization has recently employed a new data science initiative, *CSIT-165*, that uses data science to characterize pandemic diseases. 
+*CSIT-165* disseminates data driven analyses to global decision makers.
+
+*CSIT-165* is a conglomerate comprised of two fabricated entities: *Global Health Union (GHU)* and *Private Diagnostic Laboratories (PDL)*. 
+Your and your partner's role is to play a data scientist from one of these two entities.
+
+## Data
+> [2019 Novel Coronavirus COVID-19 (2019-nCoV) Data Repository by John Hopkins CSSE](https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series)
+
+Data for 2019 Novel Coronavirus is operated by the John Hopkins University Center for Systems Science and Engineering (JHU CSSE).
+Data includes daily time series CSV summary tables, including confirmations, recoveries, and deaths. 
+Country/region are countries/regions hat conform to World Health Organization (WHO).
+Lat and Long refer to coordinates references for the user. 
+Date fields are stored in MM/DD/YYYY format.
+
+```{r echo=FALSE}
+
+setwd("/Users/mrgrabiel/Desktop/Courses/R_Programming_32880/Project_1")
+
+confirmed <- read.csv("2021-Project-01/time_series_covid19_confirmed_global.csv", stringsAsFactors = FALSE)
+deaths <- read.csv("2021-Project-01/time_series_covid19_deaths_global.csv")
+recovered <- read.csv("2021-Project-01/time_series_covid19_recovered_global.csv")
+
+```
+
+## Project Objectives
+
+### Objective 1
+```{r ob1}
+
+confirmed_origin <- confirmed[which.max(confirmed$X1.22.20), c("Province.State", "Country.Region")]
+confirmed_origin
+
+confirmed_country <- as.character(confirmed_origin[[c("Country.Region")]])
+confirmed_state <- as.character(confirmed_origin[[c("Province.State")]])
+
+deaths_origin <- deaths[which.max(deaths$X1.22.20), c("Province.State", "Country.Region")]
+deaths_origin
+
+deaths_country <- as.character(deaths_origin[[c("Country.Region")]])
+deaths_state <- as.character(deaths_origin[[c("Province.State")]])
+
+recovered_origin <- recovered[which.max(recovered$X1.22.20), c("Province.State", "Country.Region")]
+recovered_origin
+
+recovered_country <- as.character(recovered_origin[[c("Country.Region")]])
+recovered_state <- as.character(recovered_origin[[c("Province.State")]])
+
+if(identical(deaths_country, recovered_country) == identical(recovered_country, confirmed_country))
+  {
+  print("same country")
+  }else
+    {
+      print("not same country")
+    }
+
+if(identical(deaths_state, recovered_state) == identical(recovered_state, confirmed_state))
+{
+  print("same state")
+}else
+{
+  print("not same state")
+}
+
+```
+
+All three data sources from the GHU and PDL show Hubei, China, as the origin for Covid-19.  The number of recovered, deaths, and confirmed cases were highest when this recording began on January 22nd, 2020.  Although it is possible that Hubei had the most awareness (through testing and recording) our agencies believe that the sustained increase of all three case counts suggest it was in fact close to the region of Hubei, China.
+
+### Objective 2
+```{r ob2}
+
+i <- 0
+column_num <- ncol(confirmed)
+column_num_values <- confirmed[column_num - i]
+column_num_b4 <-confirmed[column_num - i - 1]
+column_values_sum <- sum(column_num_values == 0)
+column_b4_sum <- sum(column_num_b4 == 0)
+
+for (i in 1:column_num)
+{
+  if(column_values_sum != column_b4_sum)
+  {
+    break
+  }
+  i <- i + 1
+  column_num_values <- confirmed[column_num - i]
+  column_num_b4 <-confirmed[column_num - i - 1]
+  column_values_sum <- sum(column_num_values == 0)
+  column_b4_sum <- sum(column_num_b4 == 0)
+  column_values_sum == column_b4_sum
+}
+print(i)
+
+zero_values <- confirmed[confirmed$X1.20.21 == 0, ]
+recent_case <- zero_values[zero_values$X1.21.21 != 0, c("Province.State", "Country.Region")]
+recent_case
+
+```
+
+The most recent case occurred 66 days before this dataset was last downloaded.  The case occurred on January 21st, 2021, in Micronesia.  There is no Province/State associated to our database for Micronesia.  Micronesia was the only location that went from 0 cases to 1 or more cases.
+
+### Objective 3
+```{r ob3}
+
+locations <- confirmed[c(72, 183), c(4:1)]
+Hubei <- c(locations[1,1], locations[1,2])
+Micronesia <- c(locations[2,1], locations[2,2])
+
+dist_between <- round(distm(Hubei, Micronesia)*0.000621371, digits = 2)
+
+paste(locations[2,3], " is ", dist_between, " miles away from ", locations[1,4], ", ", locations[1,3], ".", sep = "")
+
+```
+
+The origin of Covid-19 is suspected to be from Hubei, China.  The most recent confirmed case we can see is from Micronesia.  Micronesia is 2955.32 miles away from Hubei, China.
+
+### Objective 4
+
+#### Objective 4.1
+```{r ob4.1}
+
+```
+
+#### Objective 4.2
+```{r ob4.2}
+
+```
+
+### GitHub Log
+```{bash gitlog} 
+git log --pretty=format:"%nSubject: %s%nAuthor: %aN%nDate: %aD%nBody: %b"
+```
+
+
+
+
+

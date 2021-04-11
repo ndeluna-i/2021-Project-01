@@ -11,8 +11,13 @@ setwd("/Users/mrgrabiel/Desktop/Courses/R_Programming_32880/Project_1")
 getwd()
 
 confirmed <- read.csv("2021-Project-01/time_series_covid19_confirmed_global.csv", stringsAsFactors = FALSE)
-
 View(confirmed)
+
+deaths <- read.csv("2021-Project-01/time_series_covid19_deaths_global.csv")
+View(deaths)
+
+recovered <- read.csv("2021-Project-01/time_series_covid19_recovered_global.csv")
+View(recovered)
 
 # Identifies Province.Region and number of confirmed cases on the first date
 confirmed_region <- confirmed[confirmed$X1.22.20 == max(confirmed$X1.22.20), c("Province.State", "Country.Region", "X1.22.20")]
