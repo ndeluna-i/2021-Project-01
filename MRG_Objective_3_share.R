@@ -94,3 +94,38 @@ count_Hubei <- function(x){
 ##  Marc, you need to make a for loop up there, not if
 # Make the area (x) == the place the array detects.  If that is the
 ## case, advance one.  See how many times it happens.
+
+
+
+# NDL -- trying this out
+
+library(geosphere)
+confirmed <- read.csv("time_series_covid19_confirmed_global.csv", stringsAsFactors = FALSE)
+
+nrow_origin <- as.numeric(which(grepl("Hubei", confirmed$Province.State)))
+nrow_recent <- which(grepl("Micronesia", confirmed$Country.Region))
+
+
+miles_between <- as.numeric(round(distm(as.numeric(confirmed[nrow_origin, 4:3]), as.numeric(confirmed[nrow_recent, 4:3]))*(0.000621371)))
+
+# NDL -- making a summary data frame for the phrase, a little too tedious though 
+data <- data.frame(Case=c("Origin", "Recent"), 
+                   Country.Region = c(confirmed[nrow_origin, 1], confirmed[nrow_recent, 1]),
+                   State.Province = c(confirmed[nrow_origin, 2], confirmed[nrow_recent, 2]),
+                   Lat = c(confirmed[nrow_origin, 4], confirmed[nrow_recent, 4]),
+                   Long = c(confirmed[nrow_origin, 3], confirmed[nrow_recent, 3]))
+
+# NDL -- based off Marc's structure for this part 
+paste(data[2,3], " is ", miles_between, " miles away from ", data[1,2], ", ", data[1,3], ".", sep = "")
+
+
+# NDL -- below is extra syntax incase i need to trouble shoot something above
+#Hubei <- as.numeric(confirmed[nrow_origin, 4:3])
+#Micronesia <- as.numeric(confirmed[nrow_recent, 4:3])
+
+#Hubei <- as.numeric(confirmed[which(confirmed$Province.State == "Hubei"), 4:3])
+#Micronesia <- as.numeric(confirmed[which(confirmed$Country.Region == "Micronesia"), 4:3])
+
+
+
+
