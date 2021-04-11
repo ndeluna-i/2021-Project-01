@@ -1,0 +1,46 @@
+---
+title: "Objective_1"
+author: "Naycari De Luna \n Marc Grabiel"
+date: "4/7/2021"
+output: pdf_document
+---
+```{r setup, echo=FALSE}
+
+```
+###Objective 1
+```{r ob1, include=FALSE}
+
+confirmed <- read.csv("time_series_covid19_confirmed_global.csv", stringsAsFactors = FALSE)
+deaths <- read.csv("time_series_covid19_deaths_global.csv")
+recovered <- read.csv("time_series_covid19_recovered_global.csv")
+
+
+
+```
+
+##Objective 2
+```{r ob2, echo=FALSE}
+
+```
+
+##Objective 3
+```{r ob3, echo=FALSE}
+
+```
+
+##Objective 4
+```{r ob4.1, echo=FALSE}
+
+```
+
+```{r ob4.2, echo=FALSE}
+
+```
+
+```{r ob2, echo=FALSE}
+
+```
+
+```{bash gitlog}
+
+```
