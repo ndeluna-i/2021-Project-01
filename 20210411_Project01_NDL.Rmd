@@ -1,46 +1,215 @@
 ---
-title: "Objective_1"
-author: "Naycari De Luna \n Marc Grabiel"
-date: "4/7/2021"
-output: pdf_document
+title: "Project 1"
+author: "Name: Naycari De Luna \n Partner: Marc Grabiel"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 3
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{array}
+  - \usepackage{multirow}
+  - \usepackage{wrapfig}
+  - \usepackage{float}
+  - \usepackage{colortbl}
+  - \usepackage{pdflscape}
+  - \usepackage{tabu}
+  - \usepackage{threeparttable}
+  - \usepackage{threeparttablex}
+  - \usepackage[normalem]{ulem}
+  - \usepackage{makecell}
+  - \usepackage{xcolor}
 ---
-```{r setup, echo=FALSE}
+```{r setup, include=FALSE}
+### Load necessary packages for project ###
+packages <- c("knitr", "readr", "magrittr", "dplyr", "geosphere", "RCurl")
+
+install_me <- packages[!(packages %in% installed.packages()[, "Package"])]
+if (length(install_me)) install.packages(install_me)
+
+library(knitr)
+library(readr)
+library(magrittr)
+library(dplyr)
+library(geosphere)
+library(RCurl)
+```
+## Background
+The World Health Organization has recently employed a new data science initiative, *CSIT-165*, that uses data science to characterize pandemic diseases. 
+*CSIT-165* disseminates data driven analyses to global decision makers.
+
+*CSIT-165* is a conglomerate comprised of two fabricated entities: *Global Health Union (GHU)* and *Private Diagnostic Laboratories (PDL)*. 
+Your and your partner's role is to play a data scientist from one of these two entities.
+
+## Data
+[2019 Novel Coronavirus COVID-19 (2019-nCoV) Data Repository by John Hopkins CSSE](https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series)
+Data for 2019 Novel Coronavirus is operated by the John Hopkins University Center for Systems Science and Engineering (JHU CSSE).
+Data includes daily time series CSV summary tables, including confirmations, recoveries, and deaths. 
+Country/region are countries/regions hat conform to World Health Organization (WHO).
+Lat and Long refer to coordinates references for the user. 
+Date fields are stored in MM/DD/YYYY format.
+
+```{r data}
+
+confirmed_download <- getURL("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
+confirmed <- read.csv(text=confirmed_download, stringsAsFactors = FALSE)
+
+recovered_download <- getURL("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv")
+recovered <- read.csv(text=recovered_download, stringsAsFactors = FALSE)
+
+deaths_download <- getURL("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv")
+deaths <- read.csv(text=deaths_download, stringsAsFactors = FALSE)
+```
+
+## Project Objectives
+
+### Objective 1
+```{r ob1}
+confirmed_origin <- confirmed[which.max(confirmed$X1.22.20), c("Province.State", "Country.Region")]
+confirmed_country <- as.character(confirmed_origin[[c("Country.Region")]])
+confirmed_state <- as.character(confirmed_origin[[c("Province.State")]])
+
+deaths_origin <- deaths[which.max(deaths$X1.22.20), c("Province.State", "Country.Region")]
+deaths_country <- as.character(deaths_origin[[c("Country.Region")]])
+deaths_state <- as.character(deaths_origin[[c("Province.State")]])
+
+recovered_origin <- recovered[which.max(recovered$X1.22.20), c("Province.State", "Country.Region")]
+recovered_country <- as.character(recovered_origin[[c("Country.Region")]])
+recovered_state <- as.character(recovered_origin[[c("Province.State")]])
+
+paste("Confirmed data indicates ", confirmed_state, ", ", confirmed_country, " as origin.", sep = "")
+paste("Death data indicates ", deaths_state, ", ", deaths_country, " as origin.", sep = "")
+paste("Recovered data indicates ", recovered_state, ", ", recovered_country, " as origin.", sep = "")
+
+if(identical(deaths_country, recovered_country) == identical(recovered_country, confirmed_country))
+  {
+  paste(recovered_country, " is the origin country.", sep = "")
+  }else
+    {
+      paste(recovered_country, "is NOT the origin country.", sep = "")
+    }
+
+if(identical(deaths_state, recovered_state) == identical(recovered_state, confirmed_state))
+{
+  paste(recovered_state, " is the origin state.", sep = "")
+}else
+{
+  paste(recovered_state, " is NOT the origin state.", sep = "")
+}
 
 ```
-###Objective 1
-```{r ob1, include=FALSE}
+Confirmed cases, number deaths and number of recoveries data sets all suggest Hubei, China to be the origin of COVID-19. The max number of confirmed cases, deaths and recoveries occured in Hubei, China on the first day data was recorded; 01/22/2021. We are unable to conclude Hubei, China to be the true origin of COVID-19 since no data is available from earlier dates. An ideal case to determine origin would include data where number confirmed cases in countries and states are in a close proximity to one another. Right now, we have multiple locations with occurances of confirmed cases on 01/22/2021 that are not very close to eachother.
 
-confirmed <- read.csv("time_series_covid19_confirmed_global.csv", stringsAsFactors = FALSE)
-deaths <- read.csv("time_series_covid19_deaths_global.csv")
-recovered <- read.csv("time_series_covid19_recovered_global.csv")
+### Objective 2
+```{r ob2}
+ncol <- ncol(confirmed)
+confirmed_ordered <- arrange(confirmed, confirmed[5:ncol])
+recent_first <- as.character(head(confirmed_ordered$Country.Region, n = 1))
 
+recent <- confirmed_ordered[1,-c(1:4)]
+ncol_recent <- ncol(recent)
+
+recent <- recent[,recent[,1:ncol_recent]!=0]
+
+paste(recent_first, " had the most recent confirmed case on ", colnames(recent[1]), sep = "")
+
+```
+The confirmed data set suggests Micronesia to have had the most recent first confirmed case of COVID-19 on 01/21/2021. No other countries appear to have had a first confirmed case on this same day. Interestingly, all countries in the data set have had confirmed cases of COVID-19 since the begining of data collection.
+
+### Objective 3
+```{r ob3}
+nrow_origin <- as.numeric(which(grepl("Hubei", confirmed$Province.State)))
+nrow_recent <- which(grepl("Micronesia", confirmed$Country.Region))
+
+miles_between <- as.numeric(round(distm(as.numeric(confirmed[nrow_origin, 4:3]), as.numeric(confirmed[nrow_recent, 4:3]))*(0.000621371)))
+
+data <- data.frame(Case=c("Origin", "Recent"), 
+                   Country.Region = c(confirmed[nrow_origin, 1], confirmed[nrow_recent, 1]),
+                   State.Province = c(confirmed[nrow_origin, 2], confirmed[nrow_recent, 2]),
+                   Lat = c(confirmed[nrow_origin, 4], confirmed[nrow_recent, 4]),
+                   Long = c(confirmed[nrow_origin, 3], confirmed[nrow_recent, 3]))
+
+paste(data[2,3], " is ", miles_between, " miles away from ", data[1,2], ", ", data[1,3], ".", sep = "")
 
 
 ```
+Micronesia is the only location to have had the most recent first confirmed case of COVID-19. Micronesia is 2955 miles away from the suggested origin for COVID-19 in Hubei, China. No Provicne/State is associated with Micronesia. 
 
-##Objective 2
-```{r ob2, echo=FALSE}
+### Objective 4
 
+#### Objective 4.1
+```{r ob4.1}
+colnum_deaths <- ncol(deaths)
+total_deaths <- subset(deaths, select = c(1, 2, colnum_deaths))
+total_deaths$StateRegion <- do.call(paste0, total_deaths[1:2])
+colnames(total_deaths) = c("Province.State", "Country.Region", "Total.Deaths", "StateRegion")
+
+colnum_recovered <- ncol(recovered)
+total_recovered <- subset(recovered, select = c(1, 2,colnum_recovered))
+total_recovered$StateRegion <- do.call(paste0, total_recovered[1:2])
+colnames(total_recovered) = c("Province.State", "Country.Region", "Total.Recovered", "StateRegion")
+
+colnum_confirmed <- ncol(confirmed)
+total_confirmed <- subset(confirmed, select = c(1, 2,colnum_confirmed))
+total_confirmed$StateRegion <- do.call(paste0, total_confirmed[1:2])
+colnames(total_confirmed) = c("Province.State", "Country.Region", "Total.Confirmed", "StateRegion")
+
+risk_score <- merge(total_deaths, total_recovered, by = "StateRegion")
+risk_score <- subset(risk_score, select = c(1:4, 7))
+risk_score <- merge(risk_score, total_confirmed, by = "StateRegion")
+risk_score <- subset(risk_score, select = c(2:5, 8))
+risk_score$Risk.Score <- risk_score$Total.Deaths / risk_score$Total.Recovered
+risk_score$Death.Burden <- risk_score$Risk.Score * risk_score$Total.Confirmed
+
+GRS <- sum(risk_score$Total.Deaths) / sum(risk_score$Total.Recovered)
+
+paste("Global risk score is ", GRS, sep = "")
+
+head(risk_score[order(-risk_score$Risk.Score),], n = 8)
+tail(risk_score[order(-risk_score$Risk.Score),], n = 23)
+```
+There are 22 areas with a low risk score of 0. These areas include provinces and states in UK, Dominica, Denmark, Holy See, China, Laos, Marshall Islands, Mmicronesia, France, Australia, Saint Kitts and Nevis, Samoa, Solom Islands and Vanuatu. A risk score of 0 is likely due to a lack of deaths data where total deaths is at 0. Singapore would be the first true low risk score at 0.00050, which is 0.13 almost 1/8 of the global risk score value. 
+
+Seven area show a high risk score of "Inf". These areas include Belgium, Netherlands, Australia (New South Wales), Serbia, Sweden, United Kingdom, and US. However, a contributing discrepency to the risk score assesment of the listed areas is likely due to a lack of recovered cases data. Having total deaths number divided by total recovered number of 0 results in Inf, which would not be repesentative of the true risk score for these areas. France (Martinique), is therefor the first listed area with a true high value risk score of 0.602. Compared to the global risk score of 0.038, Martinique's risk score is 15 times greater than the global risk score.
+
+Death burden value of the least risky area (Singapore) is 178 times less when compared to the most risky area (Martinique). There is a large difference in death burden between then two area with opposite risk scores. 
+
+#### Objective 4.2
+```{r ob4.2, include=TRUE}
+total_deaths2 <- subset(deaths, select = c(2,colnum_deaths))
+total_deaths2$Sum.total <- rowSums(total_deaths2[-1])
+total_deaths2 <- aggregate(x = total_deaths2$Sum.total, by = list(total_deaths2$Country.Region), FUN = sum)
+colnames(total_deaths2) = c("Country.Region", "Total.Deaths")
+
+total_recovered2 <- subset(recovered, select = c(2,colnum_recovered))
+total_recovered2$Sum.total <- rowSums(total_recovered2[-1])
+total_recovered2 <- aggregate(x = total_recovered2$Sum.total, by = list(total_recovered2$Country.Region), FUN = sum)
+colnames(total_recovered2) = c("Country.Region", "Total.Recovered")
+
+total_confirmed2 <- subset(confirmed, select = c(2,colnum_confirmed))
+total_confirmed2$Sum.total <- rowSums(total_confirmed2[-1])
+total_confirmed2 <- aggregate(x = total_confirmed2$Sum.total, by = list(total_confirmed2$Country.Region), FUN = sum)
+colnames(total_confirmed2) = c("Country.Region", "Total.Confirmed")
+
+risk_score2 <- merge(total_deaths2, total_recovered2, by = "Country.Region")
+risk_score2 <- merge(risk_score2, total_confirmed2, by = "Country.Region")
+risk_score2$Risk.Score <- risk_score2$Total.Deaths / risk_score2$Total.Recovered
+risk_score2$Death.Burden <- risk_score2$Risk.Score * risk_score2$Total.Confirmed
+
+#kable(head(total_confirmed2[order(-total_confirmed2$Total.Confirmed),], n = 5))
+
+
+#kable(head(total_recovered2[order(-risk_score2$Total.Recovered),], n = 5))
+
+
+#kable(head(total_deaths2[order(-risk_score2$Total.Deaths),], n = 5))
 ```
 
-##Objective 3
-```{r ob3, echo=FALSE}
+Note: I am unable to uninstall an old version of kableExtra package and can not knit my rmarkdown file without omitting the kable() functions. 
 
-```
-
-##Objective 4
-```{r ob4.1, echo=FALSE}
-
-```
-
-```{r ob4.2, echo=FALSE}
-
-```
-
-```{r ob2, echo=FALSE}
-
-```
-
-```{bash gitlog}
-
+### GitHub Log
+```{bash gitlog} 
+git log --pretty=format:"%nSubject: %s%nAuthor: %aN%nDate: %aD%nBody: %b"
 ```
