@@ -27,7 +27,7 @@ header-includes:
 #### Load necessary packages ####
 # * These packages are not necessary to complete the assignment and or only used 
 #   to provide an example. 
-packages <- c("knitr", "magrittr", "geosphere")
+packages <- c("knitr", "magrittr", "geosphere", "RCurl", "dplyr", "kableExtra")
 
 install_me <- packages[!(packages %in% installed.packages()[, "Package"])]
 if (length(install_me)) install.packages(install_me)
@@ -35,6 +35,9 @@ if (length(install_me)) install.packages(install_me)
 library(knitr)
 library(magrittr)
 library(geosphere)
+library(RCurl)
+library(dplyr)
+library(kableExtra)
 ```
 
 ## Background
@@ -55,11 +58,16 @@ Date fields are stored in MM/DD/YYYY format.
 
 ```{r echo=FALSE}
 
-setwd("/Users/mrgrabiel/Desktop/Courses/R_Programming_32880/Project_1")
+confirmed_download <- getURL("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
+confirmed <- read.csv(text=confirmed_download, stringsAsFactors = FALSE)
 
-confirmed <- read.csv("2021-Project-01/time_series_covid19_confirmed_global.csv", stringsAsFactors = FALSE)
-deaths <- read.csv("2021-Project-01/time_series_covid19_deaths_global.csv")
-recovered <- read.csv("2021-Project-01/time_series_covid19_recovered_global.csv")
+recovered_download <- getURL("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv")
+recovered <- read.csv(text=recovered_download, stringsAsFactors = FALSE)
+
+deaths_download <- getURL("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv")
+
+deaths <- read.csv(text=deaths_download, stringsAsFactors = FALSE)
+
 
 ```
 
@@ -137,7 +145,7 @@ recent_case
 
 ```
 
-The most recent case occurred 66 days before this dataset was last downloaded.  The case occurred on January 21st, 2021, in Micronesia.  There is no Province/State associated to our database for Micronesia.  Micronesia was the only location that went from 0 cases to 1 or more cases.
+The most recent case occurred 79 days before the last day entered into the dataset.  The case occurred on January 21st, 2021, in Micronesia.  There is no Province/State associated to our database for Micronesia.  Micronesia was the only location that went from 0 cases to 1 or more cases.
 
 ### Objective 3
 ```{r ob3}
@@ -159,12 +167,80 @@ The origin of Covid-19 is suspected to be from Hubei, China.  The most recent co
 #### Objective 4.1
 ```{r ob4.1}
 
+column_num_deaths <- ncol(deaths)
+total_deaths <- subset(deaths, select = c(1, 2, column_num_deaths))
+total_deaths$StateRegion <- do.call(paste0, total_deaths[1:2])
+colnames(total_deaths) = c("Province.State", "Country.Region", "Total.Deaths", "StateRegion")
+
+column_num_recovered <- ncol(recovered)
+total_recovered <- subset(recovered, select = c(1, 2,column_num_recovered))
+total_recovered$StateRegion <- do.call(paste0, total_recovered[1:2])
+colnames(total_recovered) = c("Province.State", "Country.Region", "Total.Recovered", "StateRegion")
+
+column_num_confirmed <- ncol(confirmed)
+total_confirmed <- subset(confirmed, select = c(1, 2,column_num_confirmed))
+total_confirmed$StateRegion <- do.call(paste0, total_confirmed[1:2])
+colnames(total_confirmed) = c("Province.State", "Country.Region", "Total.Confirmed", "StateRegion")
+
+risk_score <- merge(total_deaths, total_recovered, by = "StateRegion")
+risk_score <- subset(risk_score, select = c(1:4, 7))
+risk_score <- merge(risk_score, total_confirmed, by = "StateRegion")
+risk_score <- subset(risk_score, select = c(2:5, 8))
+risk_score$Risk.Score <- risk_score$Total.Deaths / risk_score$Total.Recovered
+risk_score$Death.Burden <- risk_score$Risk.Score * risk_score$Total.Confirmed
+
+Global_Risk_Score <- sum(risk_score$Total.Deaths) / sum(risk_score$Total.Recovered)
+
+Global_Risk_Score
+
+head(risk_score[order(-risk_score$Risk.Score),], n = 12)
+tail(risk_score[order(-risk_score$Risk.Score),], n = 22)
+
 ```
+
+There are 22 rows under the way the data has been defined as Province/State or Country/Region areas that have 0 risk score.  They are Anguila (United Kingdom), Dominica, Falkland Islands (Malvinas, United Kingdom), Greenland (Denmark), Holy See, Jiangsu (China), Laos, Macau (China), Marshall Islands, Micronesia, New Caledonia (France), Ningxia (China), Northern Territory (Australia), Qinghai (China), Saint Helena (Ascension and Tristan da Cunha, United Kindgdom), Saint Kitts and Nevis, Saint Pierre and Miquelon (France), Samoa, Shanxi (China), Solomon Islands, Tibet (China), and Vanuatu.
+
+The highest risk area is slightly harder to accurately define because seven areas have 0 recovered individuals reported and this makes the calculation infinite (and invalid).  Most of the areas have a high number of deaths except for New South Wales (Australia).  These areas are Belgium, Netherlands, New South Wales (Australia), Serbia, Sweden, United Kingdom, and US.  The areas with the highest risk scores that are not infinite are Martinique (France), Yemen, Spain, France, and MS Zaandam.  However, two of these areas have death and recovered counts below 100 which for me highlights problems with this parameter.  These high risk areas have risk scores from 0.286-0.602.  This is much higher (up to 15 times) than the global risk score, 0.038.  However, because there are some countries with no reported number of recovered individuals the global risk value is slightly inflated because the global number of deaths from those countries was included.  There is not a clear trend between risk score and burden score.  The populations have not been standardized and so the resulting burden score can vary greatly.
+
+One problem with this dataset is that some countries have stopped reporting or have never reported the number of individuals recovered.  Sweden and the Netherlands never show a reported recovered case in the dataset.  The United States, for example, stopped reporting numbers on December 14th, 2020.
 
 #### Objective 4.2
 ```{r ob4.2}
 
+total_deaths2 <- subset(deaths, select = c(2,column_num_deaths))
+total_deaths2$Sum.total <- rowSums(total_deaths2[-1])
+total_deaths2 <- aggregate(x = total_deaths2$Sum.total, by = list(total_deaths2$Country.Region), FUN = sum)
+colnames(total_deaths2) = c("Country.Region", "Total.Deaths")
+
+total_recovered2 <- subset(recovered, select = c(2,column_num_recovered))
+total_recovered2$Sum.total <- rowSums(total_recovered2[-1])
+total_recovered2 <- aggregate(x = total_recovered2$Sum.total, by = list(total_recovered2$Country.Region), FUN = sum)
+colnames(total_recovered2) = c("Country.Region", "Total.Recovered")
+
+total_confirmed2 <- subset(confirmed, select = c(2,column_num_confirmed))
+total_confirmed2$Sum.total <- rowSums(total_confirmed2[-1])
+total_confirmed2 <- aggregate(x = total_confirmed2$Sum.total, by = list(total_confirmed2$Country.Region), FUN = sum)
+colnames(total_confirmed2) = c("Country.Region", "Total.Confirmed")
+
+risk_score2 <- merge(total_deaths2, total_recovered2, by = "Country.Region")
+risk_score2 <- merge(risk_score2, total_confirmed2, by = "Country.Region")
+risk_score2$Risk.Score <- risk_score2$Total.Deaths / risk_score2$Total.Recovered
+risk_score2$Death.Burden <- risk_score2$Risk.Score * risk_score2$Total.Confirmed
+
+Global_Risk_Score2 <- sum(risk_score2$Total.Deaths) / sum(risk_score2$Total.Recovered)
+Global_Risk_Score2
+
+kable(head(total_confirmed2[order(-total_confirmed2$Total.Confirmed),], n = 5))
+
+
+kable(head(total_recovered2[order(-risk_score2$Total.Recovered),], n = 5))
+
+
+kable(head(total_deaths2[order(-risk_score2$Total.Deaths),], n = 5))
+
 ```
+
+The top five countries with the most confirmed cases are the US, Brazil, India, France, and Russia.  The top five countries with most recovered are India, Brazil, Russia, Turkey, and Italy.  This list will not include the countries that never reported or stopped reporting recovered cases.  The top five countries with the most deaths are the US, Brazil, Mexico, India, and the United Kingdom.
 
 ### GitHub Log
 ```{bash gitlog} 
